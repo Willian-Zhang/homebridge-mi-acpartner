@@ -32,7 +32,7 @@ class ClimateAccessory extends baseAC {
         this.led;
 
         this._setCharacteristic();
-
+        this.lastState;
     }
     _setCharacteristic() {
 
@@ -126,8 +126,7 @@ class ClimateAccessory extends baseAC {
     customiUtil(active, mode, temperature) {
         let code = "";
         let _temperature = parseInt(temperature, 10);
-        //Note: Some AC need 'on' signal to active. Add later.
-
+            
         if (active == 0) {
             if (this.customi.off !== undefined) {
                 code = this.customi.off;
@@ -135,34 +134,46 @@ class ClimateAccessory extends baseAC {
                 this.log.warn("[WARN]'OFF' signal no define");
             }
         } else {
-            switch (mode) {
-                case 0:
-                    //heat
-                    if (!this.customi.heat || !this.customi.heat[_temperature]) {
-                        this.log.warn("[WARN]'HEAT' signal not define");
-                    } else {
-                        code = this.customi.heat[_temperature];
-                    }
-                    break;
-                case 1:
-                    //cool
-                    if (!this.customi.cool || !this.customi.cool[_temperature]) {
-                        this.log.warn("[WARN]'COOL' signal not define");
-                    } else {
-                        code = this.customi.cool[_temperature];
-                    }
-                    break;
-                default:
-                    //auto
-                    if (!this.customi.auto) {
-                        this.log.warn("[WARN]'AUTO' signal not define");
-                    } else {
-                        code = this.customi.auto;
-                    }
-                    break;
+            //Note: Some AC need 'on' signal to active. Add later.
+            let lastActive = (this.lastState && this.lastState.active == 1) ? 1 : 0;
+            this.log.log(`[LOG] Activeness: ${lastActive} -> ${active}`);
+            if(lastActive == 0 && this.customi.on){
+                code = this.customi.on;
+            }else{
+                switch (mode) {
+                    case 0:
+                        //heat
+                        if (!this.customi.heat || !this.customi.heat[_temperature]) {
+                            this.log.warn("[WARN]'HEAT' signal not define");
+                        } else {
+                            code = this.customi.heat[_temperature];
+                        }
+                        break;
+                    case 1:
+                        //cool
+                        if (!this.customi.cool || !this.customi.cool[_temperature]) {
+                            this.log.warn("[WARN]'COOL' signal not define");
+                        } else {
+                            code = this.customi.cool[_temperature];
+                        }
+                        break;
+                    default:
+                        //auto
+                        if (!this.customi.auto) {
+                            this.log.warn("[WARN]'AUTO' signal not define");
+                        } else {
+                            code = this.customi.auto;
+                        }
+                        break;
+                }
             }
+            
         }
-
+        this.lastState = {
+            active: active,
+            mode: mode,
+            temperature : temperature
+        }
         return code;
     }
     getTargetHeatingCoolingState(callback) {
