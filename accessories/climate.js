@@ -88,8 +88,8 @@ class ClimateAccessory extends baseAC {
     }
     _updateState() {
         //Update AC mode and active state
-        var target_mode;
-        var current_mode;
+        let target_mode;
+        let current_mode;
         if (this.active == 1) {
             switch (this.mode) {
                 case 0:
@@ -178,7 +178,7 @@ class ClimateAccessory extends baseAC {
     }
     getTargetHeatingCoolingState(callback) {
         setImmediate(() => { this._fastSync(); });
-        var state = Characteristic.TargetHeatingCoolingState.OFF;
+        let state = Characteristic.TargetHeatingCoolingState.OFF;
         if (this.active == 1) {
             switch (this.mode) {
                 case 0:

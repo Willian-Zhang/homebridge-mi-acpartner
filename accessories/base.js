@@ -8,27 +8,23 @@ class Base {
         //Search device position
         this.deviceIndex = 0;
         if (config['deviceIp']) {
-            this.deviceIndex = this._getDeviceIndex(platform.config.devices, this.config['deviceIp']);
+            let index = 0;
+            for (var elem in platform.config.devices) {
+                if (elem == config['deviceIp']) {
+                    this.deviceIndex = index;
+                    break;
+                }
+                index++;
+            }
         }
-
-        this.services = [];
 
         //Device is not ready
         this.ReadyState = false;
-        platform.startEvent.once(this.deviceIndex + "_ready", () => {
+        platform.startEvent.once(this.deviceIndex, () => {
             this.log.debug("[%s]Ready", this.name);
             this._startAcc();
         })
     }
-
-    _getDeviceIndex(devices, addr) {
-        Object.getOwnPropertyNames(devices).forEach((device, index) => {
-            if (device === addr) {
-                return index
-            }
-        })
-    }
-
     _startAcc() {
         this.ReadyState = true;
     }

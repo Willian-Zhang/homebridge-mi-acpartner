@@ -2,8 +2,6 @@ const base = require('./base');
 
 const presetUtil = require("../lib/presetUtil");
 
-const breakerTemplate = require("./breaker");
-
 class baseAC extends base {
 
     constructor(config, platform) {
@@ -24,12 +22,49 @@ class baseAC extends base {
         this.breaker = config.breaker || false;
 
         if (this.breaker == true) {
-            this.breakerAcc = new breakerTemplate(config, platform, false);
-            this.services.push(this.breakerAcc.services[0]);
+            this.bState = false;
+
+            this.breakerService = new platform.Service.Switch(this.name + "_breaker");
+            this.breakerState = this.breakerService.getCharacteristic(platform.Characteristic.On)
+                .on('set', this.setBreakerState.bind(this))
+                .updateValue(this.bState);
+
+            this.services.push(this.breakerService);
         }
 
         this.delay = 1 * 1000;
         this.delayTimer = null;
+    }
+
+    setBreakerState(value, callback) {
+        if (!this.ReadyState) {
+            callback(new Error("Waiting for device state, please try again after sync complete"));
+            return;
+        }
+        if (!this.platform.syncLock._enterSyncState(() => {
+            this.setBreakerState(value, callback);
+        })) {
+            return;
+        }
+        this.bState = !this.bState;
+        let command = this.bState ? "on" : "off";
+
+        const p1 = this.platform.devices[this.deviceIndex].call("toggle_plug", [command])
+            .then((data) => {
+                if (data[0] === "ok") {
+                    this.log.debug("[DEBUG]Success")
+                } else {
+                    throw new Error("partner return " + data[0]);
+                }
+                callback();
+            })
+            .catch((err) => {
+                this.log.error("[%s]Change breaker failed! %s", this.name, err);
+                callback(err);
+            })
+            .then(() => {
+                this.platform.syncLock._exitSyncState();
+            });
     }
 
     _startAcc() {
@@ -44,11 +79,11 @@ class baseAC extends base {
             this.log.warn("[WARN]Sync function is off");
         }
     }
-
+    
     //must have _updateState() function in child class
     _sendCmd(code, callback) {
         //Start send code
-        var command;
+        let command;
         if (code.substr(0, 2) === "FE") {
             this.log.debug("[DEBUG]Sending IR code: %s", code);
             command = 'send_ir_code';
@@ -87,7 +122,7 @@ class baseAC extends base {
         }
 
         //Start generate code
-        var code;
+        let code;
 
         if (!this.customi) {
             //presets
@@ -142,8 +177,7 @@ class baseAC extends base {
         }
 
         //Update CurrentTemperature
-        const p1 = this.outerSensor && this.platform.devices[this.deviceIndex]
-            .call('get_device_prop_exp', [
+        const p1 = this.outerSensor && this.platform.devices[this.deviceIndex].call('get_device_prop_exp', [
             [this.outerSensor, "temperature", "humidity"]
         ])
             .then((senRet) => {
@@ -163,8 +197,7 @@ class baseAC extends base {
 
 
         //Update AC state
-        const p2 = this.platform.devices[this.deviceIndex]
-            .call('get_model_and_state', [])
+        const p2 = this.platform.devices[this.deviceIndex].call('get_model_and_state', [])
             .then((ret) => {
                 if (this.lastPartnerState !== ret[1]) {
                     this.lastPartnerState = ret[1];
