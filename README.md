@@ -8,8 +8,6 @@
 
 感谢[takatost](https://github.com/takatost/homebridge-mi-ac-partner)，[miio](https://github.com/aholstenson/miio)，[YinHangCode](https://github.com/YinHangCode/homebridge-mi-aqara)和所有测试开发人员提供支持。
 
-**注意：此插件于0.6.0版本后修改了配置文件，请根据本文修改你的配置文件使插件正常工作。**
-
 **若要查看抓包教程，请访问此项目Github的[Wiki页面](https://github.com/LASER-Yi/homebridge-mi-acpartner/wiki)**
 
 ### Support(支持)
@@ -20,6 +18,8 @@
 | --- | --- |
 | 1代 & 2代 | 功能如下 |
 | 3代（升级版） | 断路器开闭 |
+
+由于三代空调伴侣准备支持使用局域网通信协议进行空调控制，空调控制功能将会逐渐迁移到[Homebridge-Mi-Aqara](https://github.com/YinHangCode/homebridge-mi-aqara)插件中，此插件仅将继续维护红外开关功能
 
 如需要使用空调伴侣中的网关功能，请使用``YinHangCode``提供的[Homebridge-Mi-Aqara](https://github.com/YinHangCode/homebridge-mi-aqara)插件。
 
@@ -129,6 +129,7 @@ sudo npm i -g homebridge-mi-acpartner@beta
 | ``syncInterval`` | 同步间隔（毫秒），设置为0会关闭同步 | 30000 | 60000 |  |
 | ``autoStart`` | 关机状态下调节温度时启动的模式，设置成"off"不会启动空调 | "heat" | "cool" |  |
 | ``sensorSid`` | 填写你的温湿度传感器ID，此温湿度传感器**必须**绑定在空调伴侣下，可在米家空调伴侣中的**子设备信息**中查到 | "lumi.158d000156e667" |  |  |
+| ``breaker`` | 第三代空调伴侣断路器支持 | true | false |  |
 
 
 如果空调没有响应，可以使用此[方法](https://github.com/LASER-Yi/homebridge-mi-acpartner/wiki)来获取你正使用的空调码，然后填入到config中。
@@ -177,13 +178,32 @@ sudo npm i -g homebridge-mi-acpartner@beta
 | ``sensorSid`` | 填写你的温湿度传感器ID，此温湿度传感器**必须**绑定在空调伴侣下，可在米家空调伴侣中的**子设备信息**中查到 | "lumi.158d000156e667" |  |  |
 | ``breaker`` | 第三代空调伴侣断路器支持 | true | false |  |
 
-**注意：此方法不支持自定义空调码**
+**此方法不支持自定义空调码**
 
 ```Json
 "accessories":[
                 {
                     "name": "AC Partner",
                     "type": "heaterCooler"
+                }
+            ]
+```
+
+*   breaker (升级版空调伴侣断路器)
+
+**如没有特殊需求，请直接使用``climate``或``heaterCooler``的``breaker``参数定义**
+
+| 参数 | 说明 | 示例 | 默认 | 必须 |
+| --- | --- | --- | --- | --- |
+| ``name`` | 显示在Homekit中的名字 | "AcPartner_breaker" | - | * |
+| ``type`` | 必须填写 | "breaker" | - | * |
+| ``deviceIp`` | 空调伴侣的IP地址，只有单个空调伴侣无需填写 | "192.168.31.120" | 使用第一个填写的空调伴侣 |  |
+
+```Json
+"accessories":[
+                {
+                    "name": "AC Partner_breaker",
+                    "type": "breaker"
                 }
             ]
 ```
@@ -405,7 +425,7 @@ sudo npm i -g homebridge-mi-acpartner@beta
 >
 > {空调型号(10)} {电源状态(1)} {模式(1)} {风力(1)} {扫风状态(1)} {设定温度(2,16进制)} {灯光状态(1)} {校验位(直到结束)}
 >
-> [空调状态] – 和你在米家中选择的预设有关
+> (空调型号) – 和你在米家中选择的预设有关
 >
 > (电源状态) – 0为关；1为开
 >
@@ -417,7 +437,7 @@ sudo npm i -g homebridge-mi-acpartner@beta
 >
 > (设定温度) – Hex，为16进制
 >
-> (灯光状态) - 0为开，a或者1为关
+> (灯光状态) - 0为开，a或1为关
 
 
 
@@ -443,7 +463,7 @@ sudo npm i -g homebridge-mi-acpartner@beta
 
 ---
 
-以及，欢迎所有的Pull Requests
+以及欢迎所有的Pull Requests
 
 ### Changelog
 
@@ -453,6 +473,10 @@ sudo npm i -g homebridge-mi-acpartner@beta
 
 * 现在可以获取到断路器状态
 * 增加了部分空调码的基础支持
+
+修复:
+
+* 控制到错误的空调伴侣
 
 0.7.1
 
